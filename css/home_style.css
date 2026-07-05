@@ -1,0 +1,74 @@
+
+@font-face {
+    font-family: gameFont;
+    src: url(../fonts/gameFont.ttf);
+}
+
+body{
+    background-image: url("../images/background.png");
+    background-color: #884e8bf7; /* Green */
+    align-items: center;
+    display: flex; 
+    flex-direction: column;
+}
+a{
+    text-decoration: none; 
+}
+#logout{
+    font-family: gameFont;
+    color: blue;
+    margin-top: 1rem;   
+    margin-left: 80%; 
+    text-decoration: none; 
+    font-size: 25px;
+    -webkit-text-stroke: 0.3px rgb(255, 255, 255); /* width and color */
+}
+
+#logout:hover{
+    color: yellow;
+    cursor: pointer;
+}
+
+#home_image{
+    border: 5px solid black;
+    padding: 10px;  
+    
+    width: 900px;
+    height: auto;
+
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+#spazio_pulsanti{
+    /* text-align: center; */
+    display: flex; 
+    gap: 10rem;
+}
+
+.pulsanti{
+    font-family: gameFont;
+
+    /* center text */
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+
+    color: white;
+    border: 5px solid;
+    width: 250px;
+    height: 70px;
+    font-size: 18px;
+    border-radius: 20px;
+
+    background-color: #5dbc0a; 
+}
+#rungame, #rules{
+    color: white;
+    text-decoration: none; 
+} 
+
+.pulsanti:hover{
+    background-color: #add58d;
+    cursor: pointer;
+}

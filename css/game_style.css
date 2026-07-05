@@ -1,0 +1,151 @@
+
+@font-face {
+    font-family: gameFont;
+    src: url(../fonts/gameFont.ttf);
+  }
+
+body{
+    background-image: url("../images/background.png");
+    background-color: #884e8bf7;  
+    font-family: gameFont;
+
+
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-rows: 0.3fr 2fr 0.3fr;
+    height: 60vh;
+    gap: 5px;
+}
+
+#screen{
+    border: 10px solid black;
+    width: 600px;
+    height: 600px;
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%); 
+}
+
+#score{
+  font-weight: bold;
+  margin-top: 45%;
+  font-size: 30px;
+}
+#messaggioRecord{
+  display: none;
+  font-weight: bold;
+  margin-top: 5%;
+  font-size: 25px;
+  color:rgb(0, 245, 12);
+}
+#cronometro{
+  padding: 10px;
+  font-size: 40px;
+  border-radius: 15px;
+  box-shadow: 0px 0px 0px 8px rgba(0,0,0,0.3);       
+
+}
+
+.img{
+    display: none;
+}
+
+.box {
+    backdrop-filter: hue-rotate(30deg);
+    border: 5px solid black;
+    border-radius: 10px;
+    color: #fff;
+    padding: 10px;
+  }
+
+
+.box.div5 button,.box.div5 a{
+  
+  font-family: gameFont;
+  font-size: 1.5rem;
+  width: 15rem;
+  padding: 25px;
+  border-radius: 5rem;
+  opacity: 50%;
+  margin: 5px;
+
+}
+
+.box.div5 a{
+  font-size: 2rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  
+  border: 1px solid black;
+  background-color: #fff;
+
+  color: black;
+}
+
+.box.div5 button>i{
+  font-size: 200%;
+}
+
+.box.div5 button:hover,.box.div5 a:hover{
+  cursor: pointer;
+  opacity: 100%;
+}
+
+.box.div5 div {
+  display: flex;
+  flex-direction: row;
+  margin-right: 25%;
+  margin-left: 25%;
+}
+
+/* filter when game is paused */
+canvas.pause{
+  filter: brightness(50%);
+}
+
+.userData{
+  font-size: 1.5vw;
+}
+.userData>p{
+  box-shadow: 0px 0px 0px 8px rgba(0,0,0,0.3);       
+
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 10%;
+  
+}
+.logoutData{
+  margin-top: 75%;
+}
+#logout{
+    color: blue;
+    font-family: gameFont;
+    text-decoration: none; 
+    font-size: 30px;
+    -webkit-text-stroke: 1px rgb(117, 186, 255); 
+}
+#logout:hover{
+  color: yellow;
+}
+.div1 { grid-area: 1 / 1 / 3 / 2; }
+
+.div2 { 
+  grid-area: 1 / 3 / 3 / 4; 
+  display: flex;
+  justify-content: center; 
+  align-items: center;   
+  flex-direction: column;  
+}
+
+.div3 { grid-area: 2 / 2 / 3 / 3; }
+
+.div4 { 
+  grid-area: 3 / 1 / 4 / 2; 
+  display: flex;
+  justify-content: center; 
+}
+
+.div5 { grid-area: 3 / 2 / 4 / 4; }

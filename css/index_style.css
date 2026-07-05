@@ -1,0 +1,103 @@
+@font-face {
+    font-family: gameFont;
+    src: url(../fonts/gameFont.ttf);
+}
+
+body {
+    background-image: url("../images/background.png");
+    background-color: #884e8bf7;
+    background-attachment: fixed;
+    background-size: cover;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-family: gameFont;
+    font-size: 38px;
+    color: #ffffff;
+    -webkit-text-stroke: 1px #000000;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    margin: 10px 0;
+}
+
+h2, h3 {
+    font-family: gameFont;
+    color: #5dbc0a;
+    -webkit-text-stroke: 0.5px #000000;
+    margin-top: 20px;
+}
+
+main {
+    max-width: 800px;
+    width: 90%;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(5px);
+    border: 2px solid #ffffff;
+    border-radius: 15px;
+    padding: 30px 40px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+section {
+    margin-bottom: 25px;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+ul li {
+    margin: 10px 0;
+}
+
+a {
+    color: #00aaff;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #fff200;
+    text-decoration: underline;
+}
+
+div > ul {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 25px;
+}
+
+div > ul li a {
+    font-family: gameFont;
+    font-size: 18px;
+    color: #ffffff;
+    padding: 8px 16px;
+    border: 2px solid #5dbc0a;
+    border-radius: 8px;
+    background-color: rgba(93, 188, 10, 0.7);
+}
+
+div > ul li a:hover {
+    background-color: #5dbc0a;
+    color: #ffff00;
+    text-decoration: none;
+}

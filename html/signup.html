@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+
+    <link rel="stylesheet" href="../css/signup_style.css" type="text/css">
+    <link rel="icon" type="image/x-icon" href="../images/login_icon.png">
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../js/signup_code.js"></script>
+</head>
+<body>
+    <div class="grid">
+        <div class="signin_space">
+            <form id="signinLogin">
+                <div class="form-text">
+                    <p>
+                        <span id="signin" class="word log">Sign Up</span>
+                    </p>
+                </div>
+                <div class="input-box">
+                    <input placeholder=" Username" name="username" type="text" autocomplete="username">
+                </div>
+                <div class="input-box">
+                    <input id="email" placeholder=" Email" name="email" type="email" autocomplete="email">
+                </div>
+                <div class="input-box">
+                    <input id="myPass" placeholder=" Password" name="password" type="password" autocomplete="new-password">
+                    <p class="showpass"><input type="checkbox" onclick="ShowPass()"> Show Password</p>
+                </div>
+                <div class="send">
+                    <button type="submit">Send</button>
+                </div>
+            </form>   
+        </div>
+    </div>
+</body>
+</html>
