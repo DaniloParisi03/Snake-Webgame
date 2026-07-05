@@ -56,6 +56,7 @@ CREATE TABLE `users` (
   `pass` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `username` varchar(25) NOT NULL,
+  `last_active` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -66,9 +67,34 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES ('$2y$10$wUJQebRmQhZIGAQDgHb14OrBZ1uDeZ9Jj8xRAhblBcaE2RhdB606q','p@gm.com','danilo03');
+INSERT INTO `users` VALUES ('$2y$10$wUJQebRmQhZIGAQDgHb14OrBZ1uDeZ9Jj8xRAhblBcaE2RhdB606q','p@gm.com','danilo03', NOW());
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Stored Procedure and Event to delete users inactive for more than 1 month
+--
+DROP PROCEDURE IF EXISTS `delete_inactive_users`;
+DELIMITER //
+CREATE PROCEDURE `delete_inactive_users`()
+BEGIN
+    DELETE FROM `users` WHERE `last_active` < NOW() - INTERVAL 1 MONTH;
+END //
+DELIMITER ;
+
+SET GLOBAL event_scheduler = ON;
+
+DROP EVENT IF EXISTS `evt_delete_inactive_users`;
+DELIMITER //
+CREATE EVENT `evt_delete_inactive_users`
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    CALL delete_inactive_users();
+END //
+DELIMITER ;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

@@ -29,13 +29,25 @@ class SnakeNode{
     }
 
     /**
-     * @brief Clears previous position and draws the current segment onto the canvas context.
+     * @brief Draws the segment with smooth 60 FPS visual interpolation between old and new grid coordinates.
      * @param {CanvasRenderingContext2D} context - The 2D rendering context.
+     * @param {number} progress - Interpolation progress ratio between 0.0 and 1.0.
      */
-    draw(context){
+    draw(context, progress = 1){
         context.beginPath();
-        context.clearRect(this.oldx, this.oldy, width, height);
-        context.drawImage(this.image, this.x, this.y, width, height);
+        let renderX = this.oldx + (this.x - this.oldx) * progress;
+        let renderY = this.oldy + (this.y - this.oldy) * progress;
+        
+        let imgToDraw = this.image;
+        if (["body tl", "body tr", "body bl", "body br"].includes(imgToDraw.id) && progress < 0.85) {
+            if (this.oldy == this.y) {
+                imgToDraw = document.getElementById("body h");
+            } else {
+                imgToDraw = document.getElementById("body v");
+            }
+        }
+        
+        context.drawImage(imgToDraw, renderX, renderY, width, height);
     }
     
     /**
@@ -132,13 +144,14 @@ export class Snake{
     }
 
     /**
-     * @brief Renders all snake segments onto the canvas context.
+     * @brief Renders all snake segments onto the canvas context with smooth interpolation.
      * @param {CanvasRenderingContext2D} context - The 2D rendering context.
+     * @param {number} progress - Interpolation progress ratio between 0.0 and 1.0.
      */
-    draw(context)
+    draw(context, progress = 1)
     {
         for(let i = 0; i < this.snake.length; i++)
-            this.snake[i].draw(context);
+            this.snake[i].draw(context, progress);
     }
 
     /**

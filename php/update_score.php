@@ -27,6 +27,14 @@
     $usernameSession = $_SESSION["username"];
     $score = (int)$_POST["actualScore"];
 
+    // Update user's last activity timestamp
+    $stmt_active = mysqli_prepare($connection, "UPDATE users SET last_active = NOW() WHERE username = ?");
+    if ($stmt_active) {
+        mysqli_stmt_bind_param($stmt_active, "s", $usernameSession);
+        mysqli_stmt_execute($stmt_active);
+        mysqli_stmt_close($stmt_active);
+    }
+
     $stmt_check = mysqli_prepare($connection, "SELECT score FROM score WHERE username = ? LIMIT 1");
     if ($stmt_check) {
         mysqli_stmt_bind_param($stmt_check, "s", $usernameSession);

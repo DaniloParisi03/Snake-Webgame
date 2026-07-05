@@ -33,6 +33,15 @@ if ($stmt) {
 
     if ($user && password_verify($password, $user["pass"])) {
         $username = $user["username"];
+        
+        // Update user's last activity timestamp
+        $stmt_active = mysqli_prepare($connection, "UPDATE users SET last_active = NOW() WHERE username = ?");
+        if ($stmt_active) {
+            mysqli_stmt_bind_param($stmt_active, "s", $username);
+            mysqli_stmt_execute($stmt_active);
+            mysqli_stmt_close($stmt_active);
+        }
+
         $stmt_score = mysqli_prepare($connection, "SELECT score FROM score WHERE username = ? LIMIT 1");
         $maxScore = 0;
         if ($stmt_score) {

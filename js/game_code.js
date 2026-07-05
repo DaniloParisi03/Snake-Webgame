@@ -48,16 +48,20 @@ window.addEventListener('DOMContentLoaded',
                 this.apple = new Apple(this);
                 
                 // Snake movement speed in milliseconds (lower = higher movement FPS & smoother animation)
-                this.velocity = 150;
+                this.velocity = 220;
                 // Condition of game over
                 this.gameOver = false;
+                // Timestamp of the last grid movement step for smooth interpolation
+                this.lastStepTime = performance.now();
             }
             /**
-             * @brief Renders the snake and apple onto the canvas context.
+             * @brief Renders the snake and apple onto the canvas context with 60 FPS interpolation.
              * @param {CanvasRenderingContext2D} context - The 2D rendering context.
+             * @param {number} progress - Interpolation progress ratio between 0.0 and 1.0.
              */
-            draw(context) {
-                this.player.draw(context);
+            draw(context, progress = 1) {
+                context.clearRect(0, 0, this.width, this.height);
+                this.player.draw(context, progress);
                 this.apple.draw(context);
             }
             /**
@@ -69,8 +73,10 @@ window.addEventListener('DOMContentLoaded',
 
             /**
              * @brief Checks if the snake's head collided with the apple; if so, increments score, increases speed, respawns apple, and grows snake body.
+             * @param {number} progress - Interpolation progress ratio between 0.0 and 1.0.
              */
-            touchApple() {
+            touchApple(progress = 1) {
+                if (progress < 0.5) return;
                 let head = this.player.snake[0];
                 if (head.x == this.apple.x && head.y == this.apple.y) {
                     clearInterval(timer);
@@ -239,6 +245,7 @@ window.addEventListener('DOMContentLoaded',
                 return;
 
             if(canvas.classList.contains("pause")) {
+                game.lastStepTime = performance.now();
                 timer = setInterval(updateMovement, game.velocity);
                 canvas.classList.remove("pause");
                 ctx.clearRect(0, 0, 600, 600);
@@ -257,15 +264,22 @@ window.addEventListener('DOMContentLoaded',
          * @brief Main game animation loop running until game.gameOver is true.
          */
         function animate() {
-            game.draw(ctx);
-            game.touchApple();
-
+            let now = performance.now();
             if (game.stop) {
                 game.update();
                 game.dx = 0;
                 game.dy = 0;
                 game.stop = false;
+                game.lastStepTime = now;
             }
+
+            let progress = 1;
+            if (game && !game.gameOver) {
+                progress = Math.min(1, (now - game.lastStepTime) / game.velocity);
+            }
+
+            game.draw(ctx, progress);
+            game.touchApple(progress);
 
             if(!game.gameOver) {
                 animId = requestAnimationFrame(animate);
