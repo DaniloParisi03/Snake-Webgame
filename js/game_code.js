@@ -48,7 +48,11 @@ window.addEventListener('DOMContentLoaded',
                 this.stepDone = false;
                 // Timestamp of the last step commit (for interpolation)
                 this.lastStepTime = performance.now();
-                this.gameOver = false;
+                this.gameOver     = false;
+                // Wall-bounce animation state
+                this.bounceBack     = false;
+                this.bounceStart    = 0;
+                this.bounceDuration = 500;
             }
             /**
              * @brief Renders the snake and apple onto the canvas context with 60 FPS interpolation.
@@ -233,31 +237,52 @@ window.addEventListener('DOMContentLoaded',
         }
 
         /**
-         * @brief Main game animation loop running until game.gameOver is true.
+         * @brief Main game animation loop.
+         *        Normal play: interpolates snake from old to new grid position.
+         *        Wall bounce: dead head slides from wall edge back to safe cell
+         *        with 𖦹 eyes, then shows "Game Over" text.
          */
         function animate() {
             const now = performance.now();
 
-            // Execute the grid step when the timer has fired
-            if (game.stepDone) {
+            // Execute the grid step only when the movement timer has fired
+            if (game.stepDone && !game.gameOver) {
                 game.update();
                 game.stepDone     = false;
                 game.lastStepTime = now;
             }
 
-            const progress = game.gameOver
-                ? 1
-                : Math.min(1, (now - game.lastStepTime) / game.velocity);
+            if (game.bounceBack) {
+                // ── Bounce-back animation (wall hit) ───────────────────────────────
+                // progress 0 = at wall edge, progress 1 = back at safe cell
+                const t    = Math.min(1, (now - game.bounceStart) / game.bounceDuration);
+                const ease = 1 - Math.pow(1 - t, 3);   // ease-out cubic
+                game.draw(ctx, ease);
 
-            game.draw(ctx, progress);
-            game.touchApple(progress);
-
-            if (!game.gameOver) {
-                animId = requestAnimationFrame(animate);
+                if (t < 1) {
+                    animId = requestAnimationFrame(animate);
+                } else {
+                    game.bounceBack = false;
+                    clearInterval(timeInt);
+                    clearInterval(timer);
+                    insertTextCanvas('Game Over');
+                }
             } else {
-                clearInterval(timeInt);
-                clearInterval(timer);
-                insertTextCanvas('Game Over');
+                // ── Normal play or instant game-over (self-collision) ─────────────
+                const progress = game.gameOver
+                    ? 1
+                    : Math.min(1, (now - game.lastStepTime) / game.velocity);
+
+                game.draw(ctx, progress);
+                game.touchApple(progress);
+
+                if (!game.gameOver) {
+                    animId = requestAnimationFrame(animate);
+                } else {
+                    clearInterval(timeInt);
+                    clearInterval(timer);
+                    insertTextCanvas('Game Over');
+                }
             }
         }
 
