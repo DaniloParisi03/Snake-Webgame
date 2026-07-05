@@ -4,74 +4,79 @@
     src: url(../fonts/gameFont.ttf);
 }
 
-body{
+body {
     background-image: url("../images/background.png");
-    background-color: #884e8bf7; /* Green */
+    background-color: #884e8bf7;
     background-repeat: repeat;
     min-height: 100vh;
     margin: 0;
-    align-items: center;
-    display: flex; 
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
     flex-direction: column;
-}
-a{
-    text-decoration: none; 
-}
-#logout{
-    font-family: gameFont;
-    color: blue;
-    margin-top: 1rem;   
-    margin-left: 80%; 
-    text-decoration: none; 
-    font-size: 25px;
-    -webkit-text-stroke: 0.3px rgb(255, 255, 255); /* width and color */
+    align-items: center;
 }
 
-#logout:hover{
+a {
+    text-decoration: none;
+}
+
+#logout {
+    font-family: gameFont;
+    color: blue;
+    align-self: flex-end;
+    margin-bottom: 10px;
+    text-decoration: none;
+    font-size: clamp(18px, 4vw, 25px);
+    -webkit-text-stroke: 0.3px rgb(255, 255, 255);
+}
+
+#logout:hover {
     color: yellow;
     cursor: pointer;
 }
 
-#home_image{
+#home_image {
     border: 5px solid black;
-    padding: 10px;  
-    
-    width: 900px;
+    padding: 10px;
+    width: min(900px, 95vw);
     height: auto;
-
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     border-radius: 8px;
-}
-#spazio_pulsanti{
-    /* text-align: center; */
-    display: flex; 
-    gap: 10rem;
+    box-sizing: border-box;
 }
 
-.pulsanti{
-    font-family: gameFont;
-
-    /* center text */
+#spazio_pulsanti {
     display: flex;
-    justify-content: center; 
-    align-items: center; 
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 1000px;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
 
+.pulsanti {
+    font-family: gameFont;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     color: white;
     border: 5px solid;
-    width: 250px;
+    width: clamp(140px, 22vw, 250px);
     height: 70px;
-    font-size: 18px;
+    font-size: clamp(14px, 2.5vw, 18px);
     border-radius: 20px;
-
-    background-color: #5dbc0a; 
+    background-color: #5dbc0a;
 }
-#rungame, #rules{
-    color: white;
-    text-decoration: none; 
-} 
 
-.pulsanti:hover{
+#rungame, #rules {
+    color: white;
+    text-decoration: none;
+}
+
+.pulsanti:hover {
     background-color: #add58d;
     cursor: pointer;
 }

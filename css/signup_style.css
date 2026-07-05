@@ -2,52 +2,52 @@
 @font-face {
     font-family: gameFont;
     src: url(../fonts/gameFont.ttf);
-  }
-
-body{
-    background-image: url("../images/background.png");
-    background-color: #884e8bf7; 
-    font-family: gameFont;
-
-    display: flex; 
-    justify-content: center;
-    flex-direction: column;
-    align-items:center;
-    height: 100vh;
-
 }
 
+body {
+    background-image: url("../images/background.png");
+    background-color: #884e8bf7;
+    background-repeat: repeat;
+    font-family: gameFont;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
 
-
-.grid{
-    width: 400px;
-    height: 500px;
+.grid {
+    width: min(400px, 92vw);
     border-radius: 10px;
-    padding: 30px 40px;
+    padding: clamp(20px, 5vw, 40px);
     background: transparent;
     backdrop-filter: hue-rotate(30deg);
     border: 1px solid white;
-}
-#signin{
-  position: relative;
-  font-family: gameFont;
-  font-size: 42px;
-  color: white;
-  -webkit-text-stroke: 1.1px rgb(0, 0, 0); 
-
+    box-sizing: border-box;
 }
 
-input.error-value{
+#signin {
+    position: relative;
+    font-family: gameFont;
+    font-size: clamp(30px, 7vw, 42px);
+    color: white;
+    -webkit-text-stroke: 1.1px rgb(0, 0, 0);
+}
+
+input.error-value {
     border: solid 4px rgb(255, 200, 0);
-    color:  rgb(255, 200, 0);
-  
-  }
-.grid .input-box p input{
+    color: rgb(255, 200, 0);
+}
+
+.grid .input-box p input {
     width: auto;
     height: auto;
 }
 
-.grid .input-box input{
+.grid .input-box input {
     margin: auto;
     width: 80%;
     height: 50px;
@@ -56,36 +56,50 @@ input.error-value{
     border: solid 4px rgba(246, 246, 246, 0.455);
     background: transparent;
     border-radius: 50px;
+    box-sizing: border-box;
 }
 
-.grid .input-box{
+.grid .input-box {
     margin-bottom: 25px;
     margin-left: 10%;
 }
-.grid button{
+
+.grid button {
     margin-left: 30px;
 }
-.send button{
-    font-family: gameFont;
 
+.send button {
+    font-family: gameFont;
     border-radius: 10px;
     background-color: rgba(255, 255, 255, 0.427);
-
     margin-top: 10%;
     width: 80%;
     height: 40px;
-}
-
-.send button:hover{
-    background-color: white;
     cursor: pointer;
 }
 
-.showpass {
-  font-size: 11px;
+.send button:hover {
+    background-color: white;
 }
 
-.input-box input::placeholder{
+.showpass {
+    font-size: 11px;
+}
+
+.input-box input::placeholder {
     color: rgba(255, 255, 255, 0.662);
     font-size: 11px;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .grid {
+        width: 95vw;
+    }
+    .grid .input-box input {
+        width: 90%;
+    }
+    .send button {
+        width: 90%;
+    }
 }

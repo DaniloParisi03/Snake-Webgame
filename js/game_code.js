@@ -6,6 +6,8 @@ import { Snake, Apple } from "./player.js";
 import { timeInt, Stopwatch } from "./timer_code.js";
 import { compareScore } from "./get_score.js";
 
+const CELL = 40; // must match player.js
+
 window.addEventListener('DOMContentLoaded',
     function () {
         const canvas = document.getElementById('screen');
@@ -28,31 +30,25 @@ window.addEventListener('DOMContentLoaded',
         class Game {
 
             constructor() {
-                this.width = canvas.width;
+                this.width  = canvas.width;
                 this.height = canvas.height;
                 // Number of apples eaten
-                this.score = 0;
-
-                // Update position only when step occurs
-                this.stop = false;
-                // Snake body
+                this.score    = 0;
+                // Active direction (string): 'Right'|'Left'|'Up'|'Down'
+                this.direction = 'Right';
+                // True while waiting for a buffered direction to be applied
+                this.inputLocked = false;
+                // Snake and apple entities
                 this.player = new Snake(this);
-
+                this.apple  = new Apple(this);
                 this.context = ctx;
-                // Increasing movement of the snake
-                this.dx = 0;
-                this.dy = 0;
-                this.direction = 0;
-
-                // Fruit appearing on screen
-                this.apple = new Apple(this);
-                
-                // Snake movement speed in milliseconds (lower = higher movement FPS & smoother animation)
+                // Step speed in ms – decreases as score increases
                 this.velocity = 220;
-                // Condition of game over
-                this.gameOver = false;
-                // Timestamp of the last grid movement step for smooth interpolation
+                // Marks whether this step has already been executed
+                this.stepDone = false;
+                // Timestamp of the last step commit (for interpolation)
                 this.lastStepTime = performance.now();
+                this.gameOver = false;
             }
             /**
              * @brief Renders the snake and apple onto the canvas context with 60 FPS interpolation.
@@ -68,7 +64,14 @@ window.addEventListener('DOMContentLoaded',
              * @brief Updates snake movement coordinates.
              */
             update() {
-                this.player.update(this.dx, this.dy, this.direction);
+                const DELTAS = {
+                    Right: [  CELL,     0],
+                    Left:  [ -CELL,     0],
+                    Down:  [     0,  CELL],
+                    Up:    [     0, -CELL],
+                };
+                const [dx, dy] = DELTAS[this.direction] ?? [0, 0];
+                this.player.update(dx, dy, this.direction);
             }
 
             /**
@@ -135,34 +138,10 @@ window.addEventListener('DOMContentLoaded',
         }
         
         // Defines delta movement based on piece direction
-        function mov(inputdirection)
-        {
-            switch(inputdirection){
-                case ("Left"):
-                   game.dx = -40;
-               break;
-
-               case ("Down"):
-                   game.dy = +40;
-               break;
-
-               case ("Right"):
-                   game.dx = +40;
-               break;
-
-               case ("Up"):
-                   game.dy = -40;
-                   break;
-            }
-            game.direction = inputdirection;
-            game.stop = true;
-        }
-        
         function updateMovement()
         {
             if (game && !game.gameOver) {
-                const snakeHead = game.direction || game.player.snake[0].direction;
-                mov(snakeHead);
+                game.stepDone = true;
                 game.inputLocked = false;
             }
         }
@@ -172,26 +151,20 @@ window.addEventListener('DOMContentLoaded',
          * @param {KeyboardEvent} ev - The keyboard event.
          */
         function movement(ev) {
-            if (!game || game.gameOver || canvas.classList.contains("pause") || game.inputLocked)
+            if (!game || game.gameOver || canvas.classList.contains('pause') || game.inputLocked)
                 return;
 
-            if(!["ArrowDown","ArrowUp","ArrowLeft","ArrowRight"].includes(ev.key))
+            if (!['ArrowDown','ArrowUp','ArrowLeft','ArrowRight'].includes(ev.key))
                 return;
 
-            const directionWithout = ev.key.substring(5);
+            const dir     = ev.key.substring(5);   // 'Down'|'Up'|'Left'|'Right'
             const headDir = game.player.snake[0].direction;
 
-            if(headDir === directionWithout)
-                return;
+            // Ignore same direction or 180° reversal
+            const opposites = { Left:'Right', Right:'Left', Up:'Down', Down:'Up' };
+            if (dir === headDir || dir === opposites[headDir]) return;
 
-            if((directionWithout == "Left" && headDir == "Right") ||
-               (directionWithout == "Right" && headDir == "Left") ||
-               (directionWithout == "Up" && headDir == "Down") ||
-               (directionWithout == "Down" && headDir == "Up")) {
-                return;
-            }
-
-            game.direction = directionWithout;
+            game.direction   = dir;
             game.inputLocked = true;
         }
               
@@ -213,7 +186,6 @@ window.addEventListener('DOMContentLoaded',
             iconPause.innerText = "pause_circle_outline";
 
             game = new Game();
-            game.direction = "Right";
             game.inputLocked = false;
             timer = setInterval(updateMovement, game.velocity);
 
@@ -264,31 +236,30 @@ window.addEventListener('DOMContentLoaded',
          * @brief Main game animation loop running until game.gameOver is true.
          */
         function animate() {
-            let now = performance.now();
-            if (game.stop) {
+            const now = performance.now();
+
+            // Execute the grid step when the timer has fired
+            if (game.stepDone) {
                 game.update();
-                game.dx = 0;
-                game.dy = 0;
-                game.stop = false;
+                game.stepDone     = false;
                 game.lastStepTime = now;
             }
 
-            let progress = 1;
-            if (game && !game.gameOver) {
-                progress = Math.min(1, (now - game.lastStepTime) / game.velocity);
-            }
+            const progress = game.gameOver
+                ? 1
+                : Math.min(1, (now - game.lastStepTime) / game.velocity);
 
             game.draw(ctx, progress);
             game.touchApple(progress);
 
-            if(!game.gameOver) {
+            if (!game.gameOver) {
                 animId = requestAnimationFrame(animate);
-            } else { 
+            } else {
                 clearInterval(timeInt);
                 clearInterval(timer);
-                insertTextCanvas("Game Over");
+                insertTextCanvas('Game Over');
             }
-        } 
+        }
 
         // Initial code execution
         startGame();        

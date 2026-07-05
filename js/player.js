@@ -1,369 +1,322 @@
-// Size in px of SnakeNode on canvas
-const width = 40, height = 40;
+// Size in px of each cell on canvas
+const CELL = 40;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: derive the sprite ID for the tail segment from its position relative
+// to the segment ahead of it (prev = snake[length-2]).
+// ─────────────────────────────────────────────────────────────────────────────
+function tailSpriteId(tail, prev) {
+    if (tail.y === prev.y) return tail.x > prev.x ? 'tail r' : 'tail l';
+    if (tail.x === prev.x) return tail.y > prev.y ? 'tail d' : 'tail u';
+    return tail.image.id; // unchanged if geometry is ambiguous
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: derive the sprite ID for any intermediate body segment given its
+// immediate neighbours (prev = segment closer to head, next = closer to tail).
+// Uses ONLY x/y positions — no direction strings.
+// ─────────────────────────────────────────────────────────────────────────────
+function bodySpriteId(prev, node, next) {
+    if (prev.x === next.x) return 'body v';   // same column → vertical
+    if (prev.y === next.y) return 'body h';   // same row    → horizontal
+
+    // Corner: which cardinal direction does each neighbour lie in?
+    const fromPrev = prev.x < node.x ? 'left'  :
+                     prev.x > node.x ? 'right' :
+                     prev.y < node.y ? 'up'    : 'down';
+    const fromNext = next.x < node.x ? 'left'  :
+                     next.x > node.x ? 'right' :
+                     next.y < node.y ? 'up'    : 'down';
+
+    const up    = fromPrev === 'up'    || fromNext === 'up';
+    const down  = fromPrev === 'down'  || fromNext === 'down';
+    const left  = fromPrev === 'left'  || fromNext === 'left';
+    const right = fromPrev === 'right' || fromNext === 'right';
+
+    if (up   && left)  return 'body tl';
+    if (up   && right) return 'body tr';
+    if (down && left)  return 'body bl';
+    if (down && right) return 'body br';
+
+    return 'body h'; // fallback (should never happen on a valid grid)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Corner detection helper – used by SnakeNode.draw
+// ─────────────────────────────────────────────────────────────────────────────
+const CORNER_IDS = new Set(['body tl', 'body tr', 'body bl', 'body br']);
 
 /**
  * @class SnakeNode
- * @brief Represents a single segment (head, body, or tail) of the snake on the canvas grid.
+ * @brief One segment of the snake (head, body, or tail).
+ *
+ * Each node stores:
+ *   x, y       – current grid-cell position (in pixels, multiples of CELL)
+ *   oldx, oldy – position at the PREVIOUS step (for interpolation)
+ *   image      – the DOM <img> element for the current sprite
+ *   prevImage  – the DOM <img> element from the previous step (for blending)
+ *   direction  – direction the HEAD is moving ("Right"|"Left"|"Up"|"Down");
+ *                body/tail nodes store this only for the dead-head sprite fallback.
  */
-class SnakeNode{
-    /**
-     * @brief Constructs a new SnakeNode segment.
-     * @param {Game} game - Reference to the main game object.
-     * @param {string} image_id - DOM image ID representing this segment.
-     * @param {number} x - Initial X coordinate in pixels.
-     * @param {number} y - Initial Y coordinate in pixels.
-     */
-    constructor(game, image_id, x, y){
-        this.game = game;
-        // Current coordinates
-        this.x = x;
-        this.y = y;
-
-        // Coordinates at the previous step
-        this.oldx = x;
-        this.oldy = y;
-
-        this.direction = "Right";
-        // Segment image element
-        this.image = document.getElementById(image_id);
+class SnakeNode {
+    constructor(game, imageId, x, y) {
+        this.game      = game;
+        this.x         = x;
+        this.y         = y;
+        this.oldx      = x;
+        this.oldy      = y;
+        this.direction = 'Right';
+        this.image     = document.getElementById(imageId);
+        this.prevImage = this.image;
     }
 
     /**
-     * @brief Draws the segment with smooth 60 FPS visual interpolation between old and new grid coordinates.
-     * @param {CanvasRenderingContext2D} context - The 2D rendering context.
-     * @param {number} progress - Interpolation progress ratio between 0.0 and 1.0.
+     * @brief 60-FPS draw with corner-aware blending.
+     *
+     * Blending rules:
+     *   • current sprite IS a corner  → snap it in immediately (no blend).
+     *   • current sprite is straight, prevImage was a corner → hold the corner
+     *     until progress 0.5 so it stays visible while the segment glides away.
+     *   • everything else → show current sprite.
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} progress  – 0.0 … 1.0 interpolation ratio
      */
-    draw(context, progress = 1){
-        context.beginPath();
-        let renderX = this.oldx + (this.x - this.oldx) * progress;
-        let renderY = this.oldy + (this.y - this.oldy) * progress;
-        
-        let imgToDraw = this.image;
-        if (["body tl", "body tr", "body bl", "body br"].includes(imgToDraw.id) && progress < 0.85) {
-            if (this.oldy == this.y) {
-                imgToDraw = document.getElementById("body h");
-            } else {
-                imgToDraw = document.getElementById("body v");
-            }
-        }
-        
-        context.drawImage(imgToDraw, renderX, renderY, width, height);
-    }
-    
-    /**
-     * @brief Updates position and orientation of this node.
-     * @param {number} dx - Change along X axis.
-     * @param {number} dy - Change along Y axis.
-     * @param {string} direction - Current movement direction.
-     * @param {SnakeNode|null} prevNode - Preceding segment used to track trailing movement.
-     */
-    update(dx, dy, direction, prevNode)
-    {   
-        function updateDirection(node, prevNode){
-            if(node.x == prevNode.x)
-                node.direction = ((node.y > prevNode.y) ? "Up" : "Down");
-            else 
-                node.x = prevNode.oldx;
-            
-            if(node.y == prevNode.y){
-                node.direction = ((node.x > prevNode.x) ? "Left" : "Right");
-            } else 
-                node.y = prevNode.oldy;
-        }
+    draw(ctx, progress = 1) {
+        const rx = this.oldx + (this.x - this.oldx) * progress;
+        const ry = this.oldy + (this.y - this.oldy) * progress;
 
-        function updateTailDirection(tail, pdirection){
-            switch(pdirection)
-            {
-                case ("Right"):
-                    tail.image = document.getElementById("tail l");
-                break;
+        const curIsCorner  = CORNER_IDS.has(this.image.id);
+        const prevIsCorner = this.prevImage && CORNER_IDS.has(this.prevImage.id);
 
-                case ("Left"):
-                    tail.image = document.getElementById("tail r");
-                break;
+        const img = (!curIsCorner && prevIsCorner && progress < 0.5)
+            ? this.prevImage
+            : this.image;
 
-                case ("Down"):
-                    tail.image = document.getElementById("tail u");
-                break;
-
-                case ("Up"):
-                    tail.image = document.getElementById("tail d");
-                break;
-            }
-        }
-
-        this.direction = direction;
-        const headType = this.image.id.includes("head") ? "head" : (this.image.id.includes("dead") ? "dead" : null);
-        if(headType)
-        {
-            this.image = document.getElementById(headType + " " + this.direction[0].toLowerCase());
-            this.x += dx;
-            this.y += dy;
-        }
-        else{
-            updateDirection(this, prevNode);
-            if(this.image.id.includes("tail"))
-            {
-                updateTailDirection(this, prevNode.direction);
-            }
-            else if(this.image.id.includes("body"))
-            {
-                if(direction === "Right" || direction === "Left")
-                    this.image = document.getElementById("body h");
-                else
-                    this.image = document.getElementById("body v");
-            }
-            
-            // Update direction of this segment based on the old position of its predecessor
-            updateDirection(this, prevNode);
-        }
-    }
-};
-
-
-/**
- * @class Snake
- * @brief Manages the collection of SnakeNodes and grid representation for the player.
- */
-export class Snake{
-    /**
-     * @brief Constructs the initial snake body and 15x15 grid matrix.
-     * @param {Game} game - Reference to the main game object.
-     */
-    constructor(game)
-    {
-        const y0 = 240, x0 = 40;
-        this.snake = [new SnakeNode(game, 'head r', 2 * x0, y0), new SnakeNode(game, 'body h', x0, y0), new SnakeNode(game, 'tail l', 0, y0)];
-        // Grid describing the canvas space as a 15x15 matrix
-        this.grid = Array.from({length: 15}, () => Array(15).fill(0));
-
-        if(this.snake.length === 3)
-            [this.grid[6][0], this.grid[6][1], this.grid[6][2]] = [this.snake[0], this.snake[1], this.snake[2]];  
-        this.game = game;
-        this.#updateGrid();
-    }
-
-    /**
-     * @brief Renders all snake segments onto the canvas context with smooth interpolation.
-     * @param {CanvasRenderingContext2D} context - The 2D rendering context.
-     * @param {number} progress - Interpolation progress ratio between 0.0 and 1.0.
-     */
-    draw(context, progress = 1)
-    {
-        for(let i = 0; i < this.snake.length; i++)
-            this.snake[i].draw(context, progress);
-    }
-
-    /**
-     * @brief Updates position of each snake segment on the canvas and in the grid matrix.
-     * @param {number} dx - Movement delta along X axis.
-     * @param {number} dy - Movement delta along Y axis.
-     * @param {string} direction - Movement direction of the head.
-     */
-    update(dx, dy, direction)
-    {  
-        for(let i = 0; i < this.snake.length; i++){
-            let node = this.snake[i];
-            [node.oldx, node.oldy] = [node.x, node.y];
-            // Head has no previous node
-            node.update(dx, dy, direction, (i == 0) ? null : this.snake[i-1]);
-        }
-
-        this.#alignBody();
-        this.#updateGrid();
-    }
-
-    /**
-     * @brief Appends a new segment to the snake body when an apple is consumed.
-     * @param {Game} game - Reference to the main game object.
-     */
-    addBodyElement(game)
-    {
-        var previousLast = this.snake[this.snake.length-1];
-        var pdx, pdy = 0;
-
-        switch(previousLast.direction){
-            case ("Left"):
-                [pdx, pdy] = [previousLast.x + 40, previousLast.y];
-            break;
-
-           case ("Right"):
-                [pdx, pdy] = [previousLast.x - 40, previousLast.y];
-            break;
-
-           case ("Down"):
-                [pdx, pdy] = [previousLast.x, previousLast.y - 40];
-            break;
-
-           case ("Up"):
-                [pdx, pdy] = [previousLast.x, previousLast.y + 40];
-            break;
-        }
-        const oldImgID = previousLast.image.id, endImdIDlen = previousLast.image.id.length;
-
-        const newElem = new SnakeNode(game, oldImgID, pdx, pdy);
-        newElem.direction = previousLast.direction;
-
-        let newImgID = "body v";
-        if (oldImgID[endImdIDlen] == 'u' || oldImgID[endImdIDlen] == 'd')
-            newImgID = "body h";
-        
-        previousLast.image = document.getElementById(newImgID);
-        this.snake.push(newElem); 
-        this.#alignBody();
-    }
-
-    /**
-     * @brief Updates the 15x15 grid matrix representing element locations on the field.
-     */
-    #updateGrid()
-    {
-        for (let i = 0; i < this.snake.length; i++)
-        {
-            const [oldI, oldJ] = [this.snake[i].oldy / 40, this.snake[i].oldx / 40];
-            this.grid[oldI][oldJ] = 0;
-
-            const [newI, newJ] = [this.snake[i].y / 40, this.snake[i].x / 40];
-            if((newI < 0 || newJ < 0) || (newI > 14 || newJ > 14) || (i == 0 && (this.grid[newI][newJ] != 0 && !(this.grid[newI][newJ] instanceof Apple))))
-                this.#checkGameOver();
-            else
-                this.grid[newI][newJ] = this.snake[i];
-        }
-    }
-
-    /**
-     * @brief Aligns intermediate body nodes between head and tail: (tail) -> ... -> (prev) -> (@this) -> (next) -> ... -> (head).
-     */    
-    #alignBody(){
-        for(var i = 1; i < this.snake.length - 1; i++)
-        {
-            let [prev, nodeToAlign, next] = [this.snake[i-1], this.snake[i], this.snake[i+1]];
-            if(prev.x == next.x)
-            {
-                nodeToAlign.image = document.getElementById("body v");
-            }
-            else if(prev.y == next.y)
-            {
-                nodeToAlign.image = document.getElementById("body h");
-            }
-        }
-        this.#orientBody();
-        this.#orientTail();
-    }
-
-    /**
-     * @brief Orients intermediate body segments (corner textures) based on current and next node directions.
-     */
-    #orientBody(){
-        for(let i = 1; i < this.snake.length - 1; i++)
-        {
-            var c = this.snake[i];
-            var p = this.snake[i+1];
-            
-            if ((c.direction == "Up" && p.direction == "Right") || (c.direction == "Left" && p.direction == "Down"))
-                c.image = document.getElementById("body tl");
-                
-            else if((c.direction == "Up" && p.direction == "Left") || (c.direction == "Right" && p.direction == "Down"))
-                c.image = document.getElementById("body tr");
-
-            else if((c.direction == "Down" && p.direction == "Right") || (c.direction == "Left" && p.direction == "Up"))
-                c.image = document.getElementById("body bl");
-
-            else if((c.direction == "Right" && p.direction == "Up") || (c.direction == "Down" && p.direction == "Left"))
-                c.image = document.getElementById("body br");
-        }
-    }
-    
-    /**
-     * @brief Adjusts tail segment texture based on the direction of its predecessor.
-     */
-    #orientTail(){
-        let tail = this.snake[this.snake.length-1];
-        let prev = this.snake[this.snake.length-2];
-
-        if(tail.y == prev.y)
-        {
-            if(tail.x > prev.x)
-                tail.image = document.getElementById('tail r');
-            else
-                tail.image = document.getElementById('tail l');
-        }
-        else if(tail.x == prev.x)
-        {
-            if(tail.y > prev.y)
-                tail.image = document.getElementById('tail d');
-            else
-                tail.image = document.getElementById('tail u');
-        }
-    }
-
-    /**
-     * @brief Checks if the snake head collided with walls or its own body, triggering game over.
-     */
-    #checkGameOver(){
-        var head = this.snake[0];
-        const [headI, headJ] = [head.y / 40, head.x / 40];
-        // If touching wall or touching snake body -> Game Over
-        if((head.x == 600 && head.direction === "Right") || 
-           (head.x == -40 && head.direction === "Left") || 
-           (head.y == -40 && head.direction === "Up") || 
-           (head.y == 600 && head.direction === "Down") ||
-           (this.grid[headI][headJ] != 0 && !(this.grid[headI][headJ] instanceof Apple)))
-        {
-            head.image = document.getElementById("dead " + head.image.id.substring(5));
-            head.x = head.oldx;
-            head.y = head.oldy;
-            head.draw(this.game.context);
-
-            this.game.gameOver = true;
-        }
+        ctx.drawImage(img, rx, ry, CELL, CELL);
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * @class Apple
- * @brief Represents the consumable fruit entity that spawns randomly on the canvas grid.
+ * @class Snake
+ * @brief Manages the ordered list of SnakeNode segments and the collision grid.
+ *
+ * Movement model (one grid step):
+ *   1. Snapshot positions of ALL segments (parallel — no sequential dependency).
+ *   2. Move head to next cell (dx/dy from current direction).
+ *   3. Move each body/tail segment to the cell the segment AHEAD just vacated.
+ *   4. Reassign ALL sprites purely from geometry (no direction strings for body).
+ *   5. Update the collision grid.
  */
-export class Apple{
-    /**
-     * @brief Constructs a new Apple object and places it on a free grid cell.
-     * @param {Game} game - Reference to the main game object.
-     */
-    constructor(game){
+export class Snake {
+    constructor(game) {
         this.game = game;
-        this.x = 0;
-        this.y = 0;
-        this.checkAppleCoordinates();
-        this.image = document.getElementById('apple');
+
+        // Initial 3-segment snake facing right, centred vertically
+        const y0 = 6 * CELL;
+        this.snake = [
+            new SnakeNode(game, 'head r', 2 * CELL, y0),
+            new SnakeNode(game, 'body h',     CELL, y0),
+            new SnakeNode(game, 'tail l',        0, y0),
+        ];
+
+        // 15×15 collision grid; 0 = empty, otherwise holds the occupant object
+        this.grid = Array.from({ length: 15 }, () => Array(15).fill(0));
+        this.grid[6][0] = this.snake[2];
+        this.grid[6][1] = this.snake[1];
+        this.grid[6][2] = this.snake[0];
+    }
+
+    // ── Public API ────────────────────────────────────────────────────────────
+
+    /**
+     * @brief Render all segments with smooth interpolation.
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} progress
+     */
+    draw(ctx, progress = 1) {
+        for (const node of this.snake) node.draw(ctx, progress);
     }
 
     /**
-     * @brief Generates random coordinates for the apple, ensuring no overlap with snake segments.
+     * @brief Advance the snake by one grid step.
+     *
+     * @param {number} dx         – pixel delta for the head (+/-CELL or 0)
+     * @param {number} dy         – pixel delta for the head (+/-CELL or 0)
+     * @param {string} direction  – new head direction
      */
-    checkAppleCoordinates(){
-        const grid = this.game.player.grid;
-        if (grid[this.y / 40] && grid[this.y / 40][this.x / 40] instanceof Apple) {
-            grid[this.y / 40][this.x / 40] = 0;
+    update(dx, dy, direction) {
+        const n = this.snake.length;
+
+        // ── Phase 1: snapshot every segment's current position ────────────────
+        // We need a plain copy so that the parallel update in Phase 3 does NOT
+        // see each other's new positions.
+        const snap = this.snake.map(s => ({ x: s.x, y: s.y }));
+
+        // ── Phase 2: commit oldx/oldy and prevImage for ALL nodes NOW ─────────
+        for (const node of this.snake) {
+            node.oldx      = node.x;
+            node.oldy      = node.y;
+            node.prevImage = node.image;
         }
 
-        var i, j;
-        do {
-            j = Math.floor(Math.random() * 15);
-            i = Math.floor(Math.random() * 15);
-        } while(grid[i][j] != 0);
+        // ── Phase 3: move positions in parallel ───────────────────────────────
+        // Head moves in the given direction.
+        this.snake[0].x         += dx;
+        this.snake[0].y         += dy;
+        this.snake[0].direction  = direction;
 
-        grid[i][j] = this;
+        // Every other segment steps into the cell its predecessor occupied.
+        for (let i = 1; i < n; i++) {
+            this.snake[i].x = snap[i - 1].x;
+            this.snake[i].y = snap[i - 1].y;
+        }
 
-        this.x = 40 * j;
-        this.y = 40 * i;
+        // ── Phase 4: assign sprites purely from geometry ──────────────────────
+        this.#assignSprites(direction);
+
+        // ── Phase 5: update collision grid ────────────────────────────────────
+        this.#updateGrid();
     }
 
     /**
-     * @brief Draws the apple image at its current grid coordinates.
-     * @param {CanvasRenderingContext2D} context - The 2D rendering context.
+     * @brief Grow the snake by one segment after eating an apple.
+     * @param {Game} game
      */
-    draw(context){
-        context.beginPath();
-        context.drawImage(this.image, this.x, this.y, width, height);
+    addBodyElement(game) {
+        const tail = this.snake[this.snake.length - 1];
+
+        // The new tail spawns one cell behind the current tail (opposite to its
+        // travel direction, derived from its position relative to the segment ahead).
+        const prev     = this.snake[this.snake.length - 2];
+        const newX     = tail.x + (tail.x - prev.x);
+        const newY     = tail.y + (tail.y - prev.y);
+        const newNode  = new SnakeNode(game, 'tail l', newX, newY);
+        newNode.oldx   = newX;
+        newNode.oldy   = newY;
+        newNode.prevImage = newNode.image;
+
+        this.snake.push(newNode);
+
+        // Re-assign sprites so the old tail becomes a body segment
+        this.#assignSprites(this.snake[0].direction);
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * @brief Assign correct sprites to every segment based solely on geometry.
+     *        Head: direction letter.
+     *        Body: straight (h/v) or corner (tl/tr/bl/br) from neighbour positions.
+     *        Tail: direction derived from position relative to segment ahead.
+     * @param {string} direction  – current head direction string
+     */
+    #assignSprites(direction) {
+        const n    = this.snake.length;
+        const head = this.snake[0];
+
+        // Head
+        if (head.image.id.startsWith('dead')) {
+            head.image = document.getElementById('dead ' + direction[0].toLowerCase());
+        } else {
+            head.image = document.getElementById('head ' + direction[0].toLowerCase());
+        }
+
+        // Intermediate body segments
+        for (let i = 1; i < n - 1; i++) {
+            const id = bodySpriteId(this.snake[i - 1], this.snake[i], this.snake[i + 1]);
+            this.snake[i].image = document.getElementById(id);
+        }
+
+        // Tail (only when snake has more than 1 segment)
+        if (n > 1) {
+            const tail = this.snake[n - 1];
+            const prev = this.snake[n - 2];
+            tail.image = document.getElementById(tailSpriteId(tail, prev));
+        }
+    }
+
+    /**
+     * @brief Update the 15×15 collision grid after positions have been committed.
+     */
+    #updateGrid() {
+        for (let i = 0; i < this.snake.length; i++) {
+            const node = this.snake[i];
+
+            // Clear old cell
+            const oi = node.oldy / CELL, oj = node.oldx / CELL;
+            if (oi >= 0 && oi < 15 && oj >= 0 && oj < 15)
+                this.grid[oi][oj] = 0;
+
+            // Check new cell
+            const ni = node.y / CELL, nj = node.x / CELL;
+            if (ni < 0 || nj < 0 || ni > 14 || nj > 14 ||
+                (i === 0 && this.grid[ni][nj] !== 0 && !(this.grid[ni][nj] instanceof Apple))) {
+                this.#triggerGameOver();
+            } else {
+                this.grid[ni][nj] = node;
+            }
+        }
+    }
+
+    /**
+     * @brief Show the dead-head sprite and set game.gameOver = true.
+     */
+    #triggerGameOver() {
+        const head = this.snake[0];
+        const dir  = head.direction[0].toLowerCase();
+        head.image = document.getElementById('dead ' + dir);
+        // Snap head back to its previous cell so it's drawn on the grid
+        head.x = head.oldx;
+        head.y = head.oldy;
+        head.draw(this.game.context, 1);
+        this.game.gameOver = true;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @class Apple
+ * @brief Consumable fruit that spawns on a random empty grid cell.
+ */
+export class Apple {
+    constructor(game) {
+        this.game  = game;
+        this.x     = 0;
+        this.y     = 0;
+        this.image = document.getElementById('apple');
+        this.checkAppleCoordinates();
+    }
+
+    /**
+     * @brief Pick a random free cell for the apple.
+     */
+    checkAppleCoordinates() {
+        const grid = this.game.player.grid;
+
+        // Clear current cell if occupied by this apple
+        const ci = this.y / CELL, cj = this.x / CELL;
+        if (grid[ci] && grid[ci][cj] instanceof Apple) grid[ci][cj] = 0;
+
+        let i, j;
+        do {
+            i = Math.floor(Math.random() * 15);
+            j = Math.floor(Math.random() * 15);
+        } while (grid[i][j] !== 0);
+
+        grid[i][j] = this;
+        this.x = j * CELL;
+        this.y = i * CELL;
+    }
+
+    /**
+     * @brief Draw the apple at its current grid position.
+     * @param {CanvasRenderingContext2D} ctx
+     */
+    draw(ctx) {
+        ctx.drawImage(this.image, this.x, this.y, CELL, CELL);
     }
 }
