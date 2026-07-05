@@ -7,6 +7,9 @@
 body{
     background-image: url("../images/background.png");
     background-color: #884e8bf7; /* Green */
+    background-repeat: repeat;
+    min-height: 100vh;
+    margin: 0;
     align-items: center;
     display: flex; 
     flex-direction: column;

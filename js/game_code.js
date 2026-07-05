@@ -47,8 +47,8 @@ window.addEventListener('DOMContentLoaded',
                 // Fruit appearing on screen
                 this.apple = new Apple(this);
                 
-                // Snake movement speed in milliseconds
-                this.velocity = 550;
+                // Snake movement speed in milliseconds (lower = higher movement FPS & smoother animation)
+                this.velocity = 150;
                 // Condition of game over
                 this.gameOver = false;
             }
@@ -80,7 +80,7 @@ window.addEventListener('DOMContentLoaded',
                     this.apple.checkAppleCoordinates();
                     this.player.addBodyElement(this);
 
-                    this.velocity = Math.max(75, this.velocity - 25);
+                    this.velocity = Math.max(50, this.velocity - 8);
                     timer = setInterval(updateMovement, this.velocity);
                 }
             }

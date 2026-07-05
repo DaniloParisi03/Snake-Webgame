@@ -13,7 +13,9 @@ body{
     display: grid;
     grid-template-columns: 1fr 2fr 1fr;
     grid-template-rows: 0.3fr 2fr 0.3fr;
-    height: 60vh;
+    min-height: 100vh;
+    margin: 0;
+    background-repeat: repeat;
     gap: 5px;
 }
 
